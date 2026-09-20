@@ -59,13 +59,8 @@ function startGuide(project: Analysis["project"]): string {
     steps.push(`${steps.length + 1}. Create and activate a Python virtual environment, then install dependencies:\n\n   \`\`\`sh\n   python -m venv .venv\n   # Activate .venv using your shell's standard command\n   pip install -r requirements.txt\n   \`\`\``);
   }
   if (hasComposer) steps.push(`${steps.length + 1}. Install the declared PHP dependencies:\n\n   \`\`\`sh\n   composer install\n   \`\`\``);
-  const scriptEntrypoints = commands.filter(command => /^(?:python |npm run (?:dev|start|serve)$)/i.test(command.name));
   if (!steps.length) {
-    steps.push("1. Read the linked project documentation for required runtime, environment variables, and launch instructions.");
-    steps.push("2. Install dependencies from the repository's detected manifest, if one is added.");
-    steps.push("3. Run a declared development or start command after it is available. No runnable entry point was safely detected from the scanned source.");
-  } else if (!scriptEntrypoints.length) {
-    steps.push(`${steps.length + 1}. A runnable entry point was not safely detected. Check the project documentation and declared scripts before starting the application.`);
+    steps.push("Follow the setup instructions in the project documentation.");
   }
-  return `## How to start locally\n\nThe steps below are derived from repository manifests and entry points; provide required environment values before launching.\n\n${steps.join("\n\n")}`;
+  return `## How to start\n\n${steps.join("\n\n")}`;
 }

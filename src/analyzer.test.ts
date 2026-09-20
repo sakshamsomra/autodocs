@@ -27,7 +27,7 @@ test("developer guide always contains a source-grounded start guide", async () =
     await writeFile(join(root, "package.json"), JSON.stringify({ scripts: { dev: "vite" } }));
     const result = await analyze(root);
     const output = developerMarkdown(result);
-    assert.match(output, /## How to start locally/);
+    assert.match(output, /## How to start/);
     assert.match(output, /npm install/);
     assert.match(output, /npm run dev/);
   } finally { await rm(root, { recursive: true, force: true }); }
