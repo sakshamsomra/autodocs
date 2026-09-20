@@ -27,7 +27,8 @@ export function developerMarkdown(a: Analysis): string {
     if (a.relations.length) sections.push(`### Relationships\n\n${table(["Source", "Target", "Key"], a.relations.map(relation => [relation.from, relation.to, relation.label]))}`);
   }
   if (a.services.length) sections.push(`## Endpoints and service methods\n\n${table(["Module", "Endpoint / method"], a.services.flatMap(service => service.methods.map(method => [service.name, method])))}`);
-  if (p?.commands.length) sections.push(`## Development commands\n\n${evidenceTable(p.commands)}`);
+  sections.push(startGuide(p));
+  if (p?.commands.length) sections.push(`## Other development commands\n\n${evidenceTable(p.commands)}`);
   if (p?.documents.length) sections.push(`## Project documentation\n\n${p.documents.map(file => `- ${sourceLink(file)}`).join("\n")}`);
   return `${sections.join("\n\n")}\n`;
 }
@@ -39,3 +40,32 @@ function cell(value: string): string { return value.replace(/&/g, "&amp;").repla
 function sourceLink(file: string): string { return `[${cell(file).replace(/[\[\]]/g, "")}](${"../" + file.split("/").map(encodeURIComponent).join("/")})`; }
 function table(headers: string[], rows: string[][]): string { return [headers.map(cell).join(" | "), headers.map(() => "---").join(" | "), ...rows.map(row => row.map(cell).join(" | "))].join("\n"); }
 function evidenceTable(items: Evidence[]): string { return table(["Component", "Details", "Source"], items.map(item => [item.name, item.detail, sourceLink(item.file)])); }
+
+/** Always provide a launch path, while only recommending commands supported by repository evidence. */
+function startGuide(project: Analysis["project"]): string {
+  const commands = project?.commands ?? [];
+  const commandNames = new Set(commands.map(command => command.name));
+  const hasNode = [...commandNames].some(command => command.startsWith("npm run"));
+  const hasPythonRequirements = commandNames.has("pip install -r requirements.txt");
+  const hasComposer = project?.stack.some(item => item.file.endsWith("composer.json")) ?? false;
+  const steps: string[] = [];
+
+  if (hasNode) {
+    steps.push("1. Install the declared Node.js dependencies:\n\n   ```sh\n   npm install\n   ```");
+    const launch = commands.find(command => /^npm run (?:dev|start|serve)$/i.test(command.name));
+    if (launch) steps.push(`2. Start the detected development command:\n\n   \`${launch.name}\``);
+  }
+  if (hasPythonRequirements) {
+    steps.push(`${steps.length + 1}. Create and activate a Python virtual environment, then install dependencies:\n\n   \`\`\`sh\n   python -m venv .venv\n   # Activate .venv using your shell's standard command\n   pip install -r requirements.txt\n   \`\`\``);
+  }
+  if (hasComposer) steps.push(`${steps.length + 1}. Install the declared PHP dependencies:\n\n   \`\`\`sh\n   composer install\n   \`\`\``);
+  const scriptEntrypoints = commands.filter(command => /^(?:python |npm run (?:dev|start|serve)$)/i.test(command.name));
+  if (!steps.length) {
+    steps.push("1. Read the linked project documentation for required runtime, environment variables, and launch instructions.");
+    steps.push("2. Install dependencies from the repository's detected manifest, if one is added.");
+    steps.push("3. Run a declared development or start command after it is available. No runnable entry point was safely detected from the scanned source.");
+  } else if (!scriptEntrypoints.length) {
+    steps.push(`${steps.length + 1}. A runnable entry point was not safely detected. Check the project documentation and declared scripts before starting the application.`);
+  }
+  return `## How to start locally\n\nThe steps below are derived from repository manifests and entry points; provide required environment values before launching.\n\n${steps.join("\n\n")}`;
+}

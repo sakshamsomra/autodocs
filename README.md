@@ -1,17 +1,17 @@
-# AutoDocs Diagram Generator
+# AutoDocs
 
 An `npx`-friendly CLI that creates readable codebase documentation from project manifests, README files, source declarations and content configuration.
 
 ## Quick start
 
 ```bash
-npx autodocs-diagram-generator analyze .
+npx @autodocify/autodocs analyze .
 ```
 
 This writes two plain-Markdown files:
 
 - `docs/overview.md` — a project-facing introduction with its purpose and capabilities, suitable for users, customers and evaluators.
-- `docs/architecture.md` — a developer guide with the stack, components, dependencies, data model, endpoints and development commands.
+- `docs/architecture.md` — a developer guide with the stack, components, dependencies, data model, endpoints and a source-grounded local start guide.
 
 Neither generated file includes scanner statistics, exclusion details, tool branding or Mermaid blocks.
 
@@ -30,7 +30,7 @@ Project content comes from README text, manifest metadata, content declarations 
 Python, PHP, SQL and Craft extraction currently supports specific textual conventions; it is not full semantic analysis. Dynamic routes, aliased Sequelize instances and runtime configuration can be missed. Business purpose comes from repository descriptions; absent documentation is reported explicitly. Manifest dependencies do not prove runtime usage. Commands are listed for review, not certified as working. Add a clear README purpose/features section to improve the overview for any stack.
 
 ```bash
-npx autodocs-diagram-generator init
+npx @autodocify/autodocs analyze /path/to/another-project
 ```
 
 ## Development
