@@ -1,6 +1,7 @@
 import { extname, basename } from "node:path";
 import ts from "typescript";
 import { discover, projectOverview } from "./project.js";
+import { frameworkService } from "./routes.js";
 import type { Analysis, Field, Model, Relation, Service } from "./types.js";
 
 const HTTP_METHODS = new Set(["get", "post", "put", "patch", "delete", "head", "options", "all"]);
@@ -54,20 +55,6 @@ function splitSqlColumns(body: string): string[] {
     else if (char === "," && depth === 0) { parts.push(body.slice(start, i)); start = i + 1; }
   }
   parts.push(body.slice(start)); return parts;
-}
-
-function flaskService(source: string, file: string): Service | undefined {
-  const methods = new Set<string>();
-  // Flask decorators bind a route to the following function. This deliberately
-  // reads only decorator syntax, avoiding generic text/function matches.
-  const route = /@(?:\w+\.)?(?:route|get|post|put|patch|delete)\s*\(\s*(["'])(.*?)\1([\s\S]*?)\)\s*\n\s*def\s+\w+/g;
-  for (const match of source.matchAll(route)) {
-    const decorator = match[0]; const path = match[2];
-    const explicit = [...decorator.matchAll(/["'](GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)["']/gi)].map(item => item[1].toUpperCase());
-    const shorthand = decorator.match(/@(?:\w+\.)?(get|post|put|patch|delete)\s*\(/i)?.[1]?.toUpperCase();
-    for (const verb of explicit.length ? explicit : [shorthand ?? "GET"]) methods.add(`${verb} ${path}`);
-  }
-  return methods.size ? { name: basename(file, extname(file)), methods: [...methods] } : undefined;
 }
 
 function propertyName(node: ts.PropertyName | ts.MemberName): string | undefined {
@@ -131,7 +118,10 @@ function expressService(source: string, file: string): Service | undefined {
   const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, extname(file) === ".ts" ? ts.ScriptKind.TS : ts.ScriptKind.JS);
   const routers = new Set<string>(); const methods = new Set<string>(); let controller = false;
   const visit = (node: ts.Node): void => {
-    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer && ts.isCallExpression(node.initializer)) { const factory = expressionName(node.initializer.expression); if (factory === "Router" || factory === "express") routers.add(node.name.text); }
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+      const factory = ts.isCallExpression(node.initializer) ? expressionName(node.initializer.expression) : ts.isNewExpression(node.initializer) ? expressionName(node.initializer.expression) : undefined;
+      if (factory && /^(?:Router|express|fastify|KoaRouter)$/i.test(factory)) routers.add(node.name.text);
+    }
     if (ts.isClassDeclaration(node) && node.name && /(?:Service|Controller)$/i.test(node.name.text)) { controller = true; for (const member of node.members) if (ts.isMethodDeclaration(member) && !member.modifiers?.some(m => m.kind === ts.SyntaxKind.PrivateKeyword)) { const name = member.name && propertyName(member.name); if (name && name !== "constructor") methods.add(name); } }
     if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) { const target = node.expression.expression; const verb = node.expression.name.text.toLowerCase(); if (ts.isIdentifier(target) && routers.has(target.text) && HTTP_METHODS.has(verb)) methods.add(`${verb.toUpperCase()} ${stringValue(node.arguments[0]) ?? "<dynamic>"}`); }
     ts.forEachChild(node, visit);
@@ -145,10 +135,14 @@ export async function analyze(root: string): Promise<Analysis> {
   for (const { path: file, source } of files) {
     if (extname(file) === ".prisma") { const found = prismaModels(source); models.push(...found.models); relations.push(...found.relations); }
     else if (extname(file) === ".sql") { const found = sqlSchema(source); models.push(...found.models); relations.push(...found.relations); }
-    else if (extname(file) === ".py") { const service = flaskService(source, file); if (service) services.push(service); }
     else if ([".ts", ".js", ".tsx", ".jsx", ".mjs", ".cjs"].includes(extname(file))) { const found = sequelizeAnalysis(source, file); models.push(...found.models); relations.push(...found.relations); const service = expressService(source, file); if (service) services.push(service); }
+    const genericService = frameworkService(source, file);
+    if (genericService) services.push(genericService);
   }
   const uniqueModels = [...new Map(models.map(m => [JSON.stringify(m), m])).values()];
   const uniqueRelations = [...new Map(relations.filter(r => models.some(m => m.name === r.from) && models.some(m => m.name === r.to)).map(r => [JSON.stringify(r), r])).values()];
-  return { models: uniqueModels, relations: uniqueRelations, services, scannedFiles: files.length, project: projectOverview(root, files, discovery.excluded, discovery.warnings) };
+  const serviceEntries = services.flatMap(service => service.methods.map(method => [`${service.name}\0${method}`, { name: service.name, method }] as const));
+  const uniqueServices = [...new Map<string, { name: string; method: string }>(serviceEntries).values()]
+    .reduce<Service[]>((grouped, item) => { const service = grouped.find(value => value.name === item.name); if (service) service.methods.push(item.method); else grouped.push({ name: item.name, methods: [item.method] }); return grouped; }, []);
+  return { models: uniqueModels, relations: uniqueRelations, services: uniqueServices, scannedFiles: files.length, project: projectOverview(root, files, discovery.excluded, discovery.warnings) };
 }

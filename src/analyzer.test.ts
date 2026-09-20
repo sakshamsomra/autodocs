@@ -33,6 +33,33 @@ test("developer guide always contains a source-grounded start guide", async () =
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
+test("discovers routes across major backend ecosystems", async () => {
+  const root = await mkdtemp(join(tmpdir(), "autodocs-"));
+  try {
+    await writeFile(join(root, "Api.java"), '@GetMapping("/users") public void users() {}');
+    await writeFile(join(root, "Api.cs"), '[HttpPost("/orders")] public void Orders() {}');
+    await writeFile(join(root, "routes.php"), "Route::delete('/sessions/{id}', $handler);");
+    await writeFile(join(root, "server.go"), 'r.GET("/health", health)');
+    await writeFile(join(root, "routes.rb"), "get '/reports', to: 'reports#index'");
+    await writeFile(join(root, "api.rs"), '#[patch("/profiles/{id}")] async fn update() {}');
+    const result = await analyze(root);
+    const routes = result.services.flatMap(service => service.methods);
+    for (const route of ["GET /users", "POST /orders", "DELETE /sessions/{id}", "GET /health", "GET /reports", "PATCH /profiles/{id}"]) assert.ok(routes.includes(route), route);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("builds start instructions from non-Node ecosystem manifests", async () => {
+  const root = await mkdtemp(join(tmpdir(), "autodocs-"));
+  try {
+    await writeFile(join(root, "go.mod"), "module example.com/service\n");
+    await writeFile(join(root, "main.go"), "package main\nfunc main() {}\n");
+    const output = developerMarkdown(await analyze(root));
+    assert.match(output, /go mod download/);
+    assert.match(output, /go run \./);
+    assert.doesNotMatch(output, /runnable entry point was not safely detected/i);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
 test("analyzes Sequelize and Express syntax trees", async () => {
   const root = await mkdtemp(join(tmpdir(), "autodocs-"));
   try {

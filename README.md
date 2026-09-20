@@ -21,13 +21,16 @@ Discovery is recursive and does not require a `src/` directory. Composer depende
 
 Project content comes from README text, manifest metadata, content declarations and source labels. Fallback summaries use AST-extracted headings and named operations; there are no product-category classifiers or predefined business feature descriptions. Sparse source context produces a sparse overview, not a fabricated product narrative. Framework display names and Markdown layouts remain formatting rules.
 
-- JavaScript/TypeScript: AST discovery for common Express and Sequelize declarations.
-- Python: module descriptions, top-level declarations, local imports, script entry points and common Flask decorators.
-- PHP/Craft CMS: Composer stack, custom PHP classes, Twig inventory and Craft content sections with template/URI configuration.
+- JavaScript/TypeScript: AST discovery for Express and Sequelize, plus NestJS decorators and Next.js route handlers.
+- Python: module descriptions, top-level declarations, local imports, script entry points, Flask and FastAPI-style decorators.
+- PHP: Composer projects, Laravel and Symfony-style routes, custom classes, and Craft content configuration.
+- JVM and .NET: Java/Kotlin Spring mappings, ASP.NET attributes/minimal APIs, Maven, Gradle, and project manifests.
+- Go, Ruby, Rust and Elixir: common router declarations, source components, dependency manifests, and detected launch commands.
+- Dart/Flutter and containerized projects: package/runtime discovery and manifest-derived setup commands.
 - Data: common SQL CREATE TABLE statements and Prisma models.
 - Project context: README purpose/features, package and Composer scripts, requirements, existing documentation links.
 
-Python, PHP, SQL and Craft extraction currently supports specific textual conventions; it is not full semantic analysis. Dynamic routes, aliased Sequelize instances and runtime configuration can be missed. Business purpose comes from repository descriptions; absent documentation is reported explicitly. Manifest dependencies do not prove runtime usage. Commands are listed for review, not certified as working. Add a clear README purpose/features section to improve the overview for any stack.
+Framework adapters report literal routes and manifest-backed commands. Routes assembled dynamically at runtime, generated source, reflection, metaprogramming and custom build systems can still require a dedicated adapter. Business purpose comes from repository descriptions and source-owned labels; add a clear README purpose/features section to improve the overview for any stack.
 
 ```bash
 npx @autodocify/autodocs analyze /path/to/another-project

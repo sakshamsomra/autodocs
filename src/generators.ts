@@ -44,23 +44,16 @@ function evidenceTable(items: Evidence[]): string { return table(["Component", "
 /** Always provide a launch path, while only recommending commands supported by repository evidence. */
 function startGuide(project: Analysis["project"]): string {
   const commands = project?.commands ?? [];
-  const commandNames = new Set(commands.map(command => command.name));
-  const hasNode = [...commandNames].some(command => command.startsWith("npm run"));
-  const hasPythonRequirements = commandNames.has("pip install -r requirements.txt");
-  const hasComposer = project?.stack.some(item => item.file.endsWith("composer.json")) ?? false;
-  const steps: string[] = [];
-
-  if (hasNode) {
-    steps.push("1. Install the declared Node.js dependencies:\n\n   ```sh\n   npm install\n   ```");
-    const launch = commands.find(command => /^npm run (?:dev|start|serve)$/i.test(command.name));
-    if (launch) steps.push(`2. Start the detected development command:\n\n   \`${launch.name}\``);
-  }
-  if (hasPythonRequirements) {
-    steps.push(`${steps.length + 1}. Create and activate a Python virtual environment, then install dependencies:\n\n   \`\`\`sh\n   python -m venv .venv\n   # Activate .venv using your shell's standard command\n   pip install -r requirements.txt\n   \`\`\``);
-  }
-  if (hasComposer) steps.push(`${steps.length + 1}. Install the declared PHP dependencies:\n\n   \`\`\`sh\n   composer install\n   \`\`\``);
+  const verified = commands.filter(command => /^(?:Install|Restore|Build and start|Start)\b/i.test(command.detail));
+  const steps = verified.map((command, index) => {
+    const directory = command.file.includes("/") ? command.file.slice(0, command.file.lastIndexOf("/")) : ".";
+    const location = directory === "." ? "the project root" : `\`${directory}\``;
+    return `${index + 1}. From ${location}, ${lowerFirst(command.detail)}\n\n   \`\`\`sh\n   ${command.name}\n   \`\`\``;
+  });
   if (!steps.length) {
     steps.push("Follow the setup instructions in the project documentation.");
   }
   return `## How to start\n\n${steps.join("\n\n")}`;
 }
+
+function lowerFirst(value: string): string { return value.charAt(0).toLowerCase() + value.slice(1); }
