@@ -3,11 +3,26 @@
   "version": "0.1.0",
   "description": "Generate project and developer documentation from source code.",
   "type": "module",
-  "bin": { "autodocs": "./dist/cli.js" },
-  "files": ["dist", "README.md", "LICENSE"],
-  "publishConfig": { "access": "public" },
-  "repository": { "type": "git", "url": "git+https://github.com/sakshamsomra/autodocs.git" },
-  "bugs": { "url": "https://github.com/sakshamsomra/autodocs/issues" },
+  "bin": {
+    "autodocs": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "!dist/**/*.test.js",
+    "!dist/**/*.test.d.ts"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sakshamsomra/autodocs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sakshamsomra/autodocs/issues"
+  },
   "homepage": "https://github.com/sakshamsomra/autodocs#readme",
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -15,9 +30,22 @@
     "test": "npm run build && node dist/analyzer.test.js",
     "prepublishOnly": "npm run build"
   },
-  "keywords": ["documentation", "codebase", "architecture", "cli", "ast"],
+  "keywords": [
+    "documentation",
+    "codebase",
+    "architecture",
+    "cli",
+    "ast"
+  ],
   "license": "MIT",
-  "engines": { "node": ">=20" },
-  "dependencies": { "typescript": "^5.8.0" },
-  "devDependencies": { "@types/node": "^24.0.0", "tsx": "^4.20.0" }
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "typescript": "^5.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0"
+  }
 }
