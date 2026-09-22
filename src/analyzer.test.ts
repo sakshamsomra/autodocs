@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { analyze } from "./analyzer.js";
 import { projectOverview } from "./project.js";
-import { developerMarkdown, markdown, overviewMarkdown } from "./generators.js";
+import { developerMarkdown, erDiagramMarkdown, markdown, overviewMarkdown } from "./generators.js";
 
 test("context follows arbitrary source labels without domain-specific feature prose", () => {
   for (const label of ["Inventory Desk", "Orbit Planner", "Recipe Library"]) {
@@ -91,6 +91,28 @@ test("analyzes Sequelize and Express syntax trees", async () => {
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("creates a standalone Mermaid ER diagram from detected models", () => {
+  const output = erDiagramMarkdown({
+    models: [
+      { name: "User", fields: [{ name: "id", type: "UUID", primary: true }, { name: "email", type: "STRING" }] },
+      { name: "Post", fields: [{ name: "id", type: "INTEGER", primary: true }, { name: "author id", type: "INTEGER" }] },
+    ],
+    relations: [{ from: "User", to: "Post", label: "hasMany" }], services: [], scannedFiles: 1,
+    project: { name: "Blog", description: "", features: [], stack: [], components: [], content: [], commands: [], connections: [], documents: [], languages: {}, excluded: 0, warnings: [] },
+  });
+  assert.match(output, /# Blog — Entity Relationship Diagram/);
+  assert.match(output, /```mermaid\nerDiagram/);
+  assert.match(output, /User \|\|--o\{ Post : hasMany/);
+  assert.match(output, /INTEGER author_id/);
+  assert.match(output, /## Entities/);
+});
+
+test("explains when no ER diagram can be generated", () => {
+  const output = erDiagramMarkdown({ models: [], relations: [], services: [], scannedFiles: 0 });
+  assert.match(output, /No data models were detected/);
+  assert.doesNotMatch(output, /```mermaid/);
 });
 
 test("documents project purpose and Craft content without vendor and editor false positives", async () => {

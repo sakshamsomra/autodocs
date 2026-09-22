@@ -23,7 +23,7 @@ export async function discover(root: string): Promise<{ files: SourceFile[]; exc
         else await walk(path);
         continue;
       }
-      if (!entry.isFile() || ["architecture.md", "overview.md"].includes(entry.name) || /(?:\.min\.[cm]?js|\.bundle\.js|\.map|\.lock|\.test\.ts)$/.test(entry.name)) { excluded++; continue; }
+      if (!entry.isFile() || ["architecture.md", "overview.md", "er-diagram.md"].includes(entry.name) || /(?:\.min\.[cm]?js|\.bundle\.js|\.map|\.lock|\.test\.ts)$/.test(entry.name)) { excluded++; continue; }
       if (!extensions.has(extname(entry.name).toLowerCase()) && !manifests.has(entry.name.toLowerCase())) continue;
       try {
         if ((await stat(path)).size > 1_000_000) { warnings.push(`Skipped file larger than 1 MB: ${relative(root, path)}`); continue; }

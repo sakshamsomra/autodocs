@@ -33,6 +33,20 @@ export function developerMarkdown(a: Analysis): string {
   return `${sections.join("\n\n")}\n`;
 }
 
+/** A standalone Mermaid ER diagram and field reference for detected data models. */
+export function erDiagramMarkdown(a: Analysis): string {
+  const title = cell(a.project?.name ?? "Project");
+  const sections = [`# ${title} — Entity Relationship Diagram`];
+  if (!a.models.length) {
+    sections.push("No data models were detected in the scanned source.");
+    return `${sections.join("\n\n")}\n`;
+  }
+  sections.push(`\`\`\`mermaid\nerDiagram\n${a.models.map(mermaidEntity).join("\n\n")}${a.relations.length ? `\n\n${a.relations.map(mermaidRelation).join("\n")}` : ""}\n\`\`\``);
+  sections.push("## Entities");
+  for (const model of a.models) sections.push(`### ${cell(model.name)}\n\n${table(["Field", "Type", "Primary key", "Optional"], model.fields.map(field => [field.name, field.type, field.primary ? "Yes" : "—", field.optional ? "Yes" : "No"]))}`);
+  return `${sections.join("\n\n")}\n`;
+}
+
 // Kept for consumers that import the original generator directly.
 export const markdown = developerMarkdown;
 
@@ -40,6 +54,15 @@ function cell(value: string): string { return value.replace(/&/g, "&amp;").repla
 function sourceLink(file: string): string { return `[${cell(file).replace(/[\[\]]/g, "")}](${"../" + file.split("/").map(encodeURIComponent).join("/")})`; }
 function table(headers: string[], rows: string[][]): string { return [headers.map(cell).join(" | "), headers.map(() => "---").join(" | "), ...rows.map(row => row.map(cell).join(" | "))].join("\n"); }
 function evidenceTable(items: Evidence[]): string { return table(["Component", "Details", "Source"], items.map(item => [item.name, item.detail, sourceLink(item.file)])); }
+function mermaidEntity(model: Analysis["models"][number]): string {
+  return `  ${mermaidName(model.name)} {\n${model.fields.map(field => `    ${mermaidToken(field.type, "string")} ${mermaidToken(field.name, "field")} ${field.primary ? "PK" : ""}`.trimEnd()).join("\n")}\n  }`;
+}
+function mermaidRelation(relation: Analysis["relations"][number]): string {
+  const cardinality = /hasmany|one.?to.?many/i.test(relation.label) ? "||--o{" : /hasone|one.?to.?one/i.test(relation.label) ? "||--||" : "}o--||";
+  return `  ${mermaidName(relation.from)} ${cardinality} ${mermaidName(relation.to)} : ${mermaidToken(relation.label, "relates_to")}`;
+}
+function mermaidName(value: string): string { return mermaidToken(value, "Entity"); }
+function mermaidToken(value: string, fallback: string): string { return value.replace(/[^A-Za-z0-9_-]/g, "_").replace(/^\d/, "_").replace(/_+/g, "_") || fallback; }
 
 /** Always provide a launch path, while only recommending commands supported by repository evidence. */
 function startGuide(project: Analysis["project"]): string {
