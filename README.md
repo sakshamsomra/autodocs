@@ -12,12 +12,20 @@ This writes three plain-Markdown files:
 
 - `docs/overview.md` — a project-facing introduction with its purpose and capabilities, suitable for users, customers and evaluators.
 - `docs/architecture.md` — a developer guide with the stack, components, dependencies, data model, endpoints and a source-grounded local start guide.
+- `docs/er-diagram.md` — a Mermaid entity-relationship diagram and field reference for detected data models.
 
 Generated files include no scanner statistics, exclusion details or tool branding. `er-diagram.md` is the exception for Mermaid: it contains the generated ER diagram.
 
 Discovery is recursive and does not require a `src/` directory. Composer dependencies, Node dependencies, Python virtual environments, Craft control-panel resources, generated builds and uploaded data are excluded. Environment files and configuration JSON values are not read. Application code and setup commands are never executed.
 
-`docs/er-diagram.md` contains a Mermaid entity-relationship diagram and field reference for detected data models.
+## Explain a project or file
+
+```bash
+npx @autodocify/autodocs explain .
+npx @autodocify/autodocs explain src/services/payment.ts
+```
+
+`explain` prints to the terminal and does not write files. A directory explanation summarizes statically detected API routes, models, services, integrations, authentication, persistence and application layers. A file explanation shows its purpose, local importers, direct imports, detected table references and recognized external SDK calls. The deeper import and call analysis currently supports JavaScript and TypeScript; other supported source files get a basic explanation. The application layer order is inferred from declarations and dependencies, not a verified runtime call trace.
 
 ## Current coverage
 

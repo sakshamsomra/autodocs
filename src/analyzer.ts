@@ -1,6 +1,7 @@
 import { extname, basename } from "node:path";
 import ts from "typescript";
 import { discover, projectOverview } from "./project.js";
+import type { SourceFile } from "./project.js";
 import { frameworkService } from "./routes.js";
 import type { Analysis, Field, Model, Relation, Service } from "./types.js";
 
@@ -131,7 +132,12 @@ function expressService(source: string, file: string): Service | undefined {
 
 export async function analyze(root: string): Promise<Analysis> {
   const discovery = await discover(root);
-  const files = discovery.files; const models: Model[] = []; const relations: Relation[] = []; const services: Service[] = [];
+  return analyzeSources(root, discovery.files, discovery.excluded, discovery.warnings);
+}
+
+/** Analyze an already discovered set of files, so other views can reuse one scan. */
+export function analyzeSources(root: string, files: SourceFile[], excluded = 0, warnings: string[] = []): Analysis {
+  const models: Model[] = []; const relations: Relation[] = []; const services: Service[] = [];
   for (const { path: file, source } of files) {
     if (extname(file) === ".prisma") { const found = prismaModels(source); models.push(...found.models); relations.push(...found.relations); }
     else if (extname(file) === ".sql") { const found = sqlSchema(source); models.push(...found.models); relations.push(...found.relations); }
@@ -144,5 +150,5 @@ export async function analyze(root: string): Promise<Analysis> {
   const serviceEntries = services.flatMap(service => service.methods.map(method => [`${service.name}\0${method}`, { name: service.name, method }] as const));
   const uniqueServices = [...new Map<string, { name: string; method: string }>(serviceEntries).values()]
     .reduce<Service[]>((grouped, item) => { const service = grouped.find(value => value.name === item.name); if (service) service.methods.push(item.method); else grouped.push({ name: item.name, methods: [item.method] }); return grouped; }, []);
-  return { models: uniqueModels, relations: uniqueRelations, services: uniqueServices, scannedFiles: files.length, project: projectOverview(root, files, discovery.excluded, discovery.warnings) };
+  return { models: uniqueModels, relations: uniqueRelations, services: uniqueServices, scannedFiles: files.length, project: projectOverview(root, files, excluded, warnings) };
 }
