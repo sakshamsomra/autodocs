@@ -17,4 +17,28 @@ export interface ProjectOverview {
   excluded: number;
   warnings: string[];
 }
-export interface Analysis { models: Model[]; relations: Relation[]; services: Service[]; scannedFiles: number; project?: ProjectOverview }
+export interface SourceDependency { module: string; names: string[]; display: string; targets: string[] }
+export interface SourceInsight {
+  file: string;
+  language: string;
+  adapter: string;
+  coverage: "structured" | "heuristic" | "generic" | "metadata";
+  name: string;
+  purpose: string;
+  declarations: string[];
+  operations: string[];
+  dependencies: SourceDependency[];
+  calls: string[];
+  externalCalls: string[];
+  integrations: string[];
+  configuration: string[];
+  databases: string[];
+  tables: string[];
+  models: Model[];
+  relations: Relation[];
+  endpoints: string[];
+  serviceNames: string[];
+  sections: { title: string; items: string[] }[];
+  notes: string[];
+}
+export interface Analysis { models: Model[]; relations: Relation[]; services: Service[]; scannedFiles: number; project?: ProjectOverview; sources?: SourceInsight[] }

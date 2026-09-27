@@ -2,6 +2,7 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, extname, join, relative } from "node:path";
 import type { Evidence, ProjectOverview } from "./types.js";
 import { inferProjectContext } from "./context.js";
+import { sourceCandidate, isTextSource } from "./source-text.js";
 
 // Do not inspect installed libraries, generated bundles, uploaded data or secrets.
 const excludedDirectories = new Set(["node_modules", "vendor", ".git", "dist", "build", "venv", ".venv", "__pycache__", "storage", "runtime", "cache", "uploads", "coverage", ".next", "cpresources"]);
@@ -19,15 +20,17 @@ export async function discover(root: string): Promise<{ files: SourceFile[]; exc
       const path = join(dir, entry.name);
       if (entry.isSymbolicLink()) { excluded++; continue; }
       if (entry.isDirectory()) {
-        if (excludedDirectories.has(entry.name.toLowerCase())) excluded++;
+        if (excludedDirectories.has(entry.name.toLowerCase()) || entry.name.startsWith(".")) excluded++;
         else await walk(path);
         continue;
       }
       if (!entry.isFile() || ["architecture.md", "overview.md", "er-diagram.md"].includes(entry.name) || /(?:\.min\.[cm]?js|\.bundle\.js|\.map|\.lock|\.test\.ts)$/.test(entry.name)) { excluded++; continue; }
-      if (!extensions.has(extname(entry.name).toLowerCase()) && !manifests.has(entry.name.toLowerCase())) continue;
+      if (!extensions.has(extname(entry.name).toLowerCase()) && !manifests.has(entry.name.toLowerCase()) && !sourceCandidate(entry.name)) continue;
       try {
         if ((await stat(path)).size > 1_000_000) { warnings.push(`Skipped file larger than 1 MB: ${relative(root, path)}`); continue; }
-        files.push({ path: relative(root, path).replace(/\\/g, "/"), source: await readFile(path, "utf8") });
+        const source = await readFile(path, "utf8");
+        if (!isTextSource(source)) { excluded++; continue; }
+        files.push({ path: relative(root, path).replace(/\\/g, "/"), source });
       } catch { warnings.push(`Could not read file: ${relative(root, path)}`); }
     }
   }

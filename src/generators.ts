@@ -20,6 +20,8 @@ export function developerMarkdown(a: Analysis): string {
   if (p?.stack.length) sections.push(`## Technology stack\n\n${evidenceTable(p.stack)}`);
   if (p?.components.length) sections.push(`## Components\n\n${evidenceTable(p.components)}`);
   if (p?.connections.length) sections.push(`## Module dependencies\n\n${evidenceTable(p.connections)}`);
+  const fallbackSources = a.sources?.filter(source => source.coverage === "generic") ?? [];
+  if (fallbackSources.length) sections.push(`## Source interpretation\n\nThese files use common syntax patterns rather than a dedicated language adapter; declarations and dependencies may be incomplete.\n\n${fallbackSources.map(source => `- ${sourceLink(source.file)}`).join("\n")}`);
   if (p?.content.length) sections.push(`## Content model\n\n${evidenceTable(p.content)}`);
   if (a.models.length) {
     sections.push("## Data model");
@@ -43,7 +45,7 @@ export function erDiagramMarkdown(a: Analysis): string {
   }
   sections.push(`\`\`\`mermaid\nerDiagram\n${a.models.map(mermaidEntity).join("\n\n")}${a.relations.length ? `\n\n${a.relations.map(mermaidRelation).join("\n")}` : ""}\n\`\`\``);
   sections.push("## Entities");
-  for (const model of a.models) sections.push(`### ${cell(model.name)}\n\n${table(["Field", "Type", "Primary key", "Optional"], model.fields.map(field => [field.name, field.type, field.primary ? "Yes" : "—", field.optional ? "Yes" : "No"]))}`);
+  for (const model of a.models) sections.push(`### ${cell(model.name)}\n\n${model.fields.length ? table(["Field", "Type", "Primary key", "Optional"], model.fields.map(field => [field.name, field.type, field.primary ? "Yes" : "—", field.optional === undefined ? "Unknown" : field.optional ? "Yes" : "No"])) : "Field definitions were not resolved from source."}`);
   return `${sections.join("\n\n")}\n`;
 }
 
