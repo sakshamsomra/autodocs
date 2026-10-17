@@ -1,6 +1,6 @@
 {
   "name": "@autodocify/autodocs",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Generate project and developer documentation from source code.",
   "type": "module",
   "bin": {
