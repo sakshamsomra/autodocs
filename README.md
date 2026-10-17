@@ -40,6 +40,64 @@ There is no language-extension whitelist for source discovery or file explanatio
 
 Analysis runs entirely in Node and never imports or executes application code. JavaScript/TypeScript use a syntax tree; Python and the common syntax adapters use static extraction. Python explanations retain docstrings, typed operations, SDK calls, configuration references and instances. Dynamic imports, reflection, custom module paths and injected clients may not resolve.
 
+## Ask questions about a codebase
+
+Run in the project you want to search:
+
+```bash
+npx @autodocify/autodocs ask "How does authentication work?"
+npx @autodocify/autodocs ask "Where are invoices reconciled?"
+npx @autodocify/autodocs ask "Where is Redis caching configured?"
+npx @autodocify/autodocs ask "Who calls PaymentService?" --path ../another-project
+npx @autodocify/autodocs ask
+```
+
+Bare `ask` prompts for one question in an interactive terminal. A question is required in scripts/non-interactive use. `ask --help` shows the options. Output goes to the terminal; no documentation or index files are written.
+
+`ask` runs locally with no API key, hosted model, code upload or execution of application code. It ranks source, documentation and configuration using question terms, split symbol names and common terminology. Output leads with an `ANSWER`, followed by a terminal-friendly chart and a `VERDICT` describing what the evidence establishes. Raw source statements, function bodies, SQL and numbered code excerpts are not printed. Symbols have compact `[file:line]` references; facts without an exact line anchor use `[file]` instead of inventing a line number. Questions are not restricted to authentication or a fixed list of topics: domain-specific symbols, routes, tables and phrases are searchable too. With no matching evidence, the verdict says the answer cannot be established.
+
+The chart adapts to the question: a `FLOW CHART` for resolved calls, a `CALLER CHART` for reverse references, or a `SOURCE MAP` grouping configuration, database and other source facts. Source maps do not imply execution order. Verdicts summarize detected relationships and, when available, the operation/class's documented responsibility; they do not certify correctness or successful runtime behavior.
+
+Questions such as “Which database is being used?” prioritize imported database adapters and declared schema providers over database drivers that appear only in a package manifest. If code and schema specify different providers, the answer shows both. External API answers list recognized SDK providers and their source files while leaving unrelated API routes out of the result.
+
+For “how do I start/run this project?” questions, `ask` reads package manager and workspace declarations, runnable package scripts, relevant setup docs, frontend ports, and direct server entry points. It returns copyable install/start commands with each command's working directory context and source reference, and separates optional workspace apps when the root command does not launch them. It also reports detected environment/database prerequisites without reading secret-file contents.
+
+For flow questions, JavaScript/TypeScript syntax and static type resolution connect actual call sites to local definitions, including relative imports, aliases, instance methods and inline handlers. Recognized Express/Fastify/router registrations can start the tree; literal router mounts supply URL prefixes. For example, **only when the project's code supports these relationships**:
+
+```text
+FLOW CHART
+┌──────────────────────┐
+│ POST /api/auth/login │
+└──────────────────────┘
+[src/routes/auth.ts:5]
+└──► AuthController.login() [src/controllers/auth.ts:4]
+     ├──► AuthService.authenticate() [src/services/auth.ts:6]
+     │    ├──► UserRepository.findByEmail() [src/repositories/user.ts:2]
+     │    ├──► bcrypt.compare() [src/services/auth.ts:8] [?]
+     │    └──► JWTService.generateToken() [src/services/jwt.ts:3]
+     └──► res.json() [src/controllers/auth.ts:6] [?]
+
+VERDICT
+AuthService.authenticate() connects to UserRepository.findByEmail(),
+bcrypt.compare() and JWTService.generateToken() in the source. These are
+static call relationships, not guaranteed runtime execution or successful behavior.
+```
+
+The tree shows static call relationships, **not guaranteed runtime execution order** or a verified request trace. `[?]` marks an unresolved definition. Conditional branches can appear together; callback references are labeled, utility calls may be omitted, and recursion/large trees are bounded. External library implementations, custom path aliases, dynamic dispatch and dependency injection may remain unresolved. Imports alone never become call edges.
+
+Search and source facts work across the same stacks and database adapters as `explain`, including generic text-source fallback. Cross-file call trees currently have deeper support for JavaScript/TypeScript; other languages get a source map of operations, observed calls and file references, not invented execution chains. This is local retrieval and static analysis, **not LLM-based reasoning**: broad design/why questions or concepts not named in the source may need a more specific question or human context. Comments and documentation describe stated intent, not verified behavior.
+
+Discovery exclusions still apply (including generated files, dependencies and `.test.ts` files). `ask` additionally omits secret-named files and redacts obvious credential literals before indexing. Redaction is best-effort, not a security guarantee; symbol names and documented descriptions can still be sensitive, so review output before sharing it.
+
+To test an unpublished local checkout against another project:
+
+```bash
+npm run build
+node dist/cli.js ask "How does authentication work?" --path ../your-backend
+```
+
+`npx @autodocify/autodocs` uses the published package; local changes are available through `node dist/cli.js` until a new package version is published.
+
 ## Language and database coverage
 
 The pipeline is extensible across stacks, but it does not claim complete semantic support for every language, framework or database:
@@ -99,5 +157,5 @@ node dist/cli.js analyze ../your-backend
 
 - Expand schema fields and relationship extraction for ORM and migration dialects.
 - Add `--output README.md` and `--agents` marker replacement.
-- Infer real call chains for richer sequence diagrams.
+- Expand static call tracing beyond JavaScript/TypeScript and support more router patterns.
 - Publish the package to npm under a unique package name.

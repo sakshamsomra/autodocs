@@ -27,7 +27,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts",
-    "test": "npm run build && node dist/analyzer.test.js && node dist/explain.test.js && node dist/inspection.test.js",
+    "test": "npm run build && node dist/analyzer.test.js && node dist/explain.test.js && node dist/inspection.test.js && node dist/ask.test.js",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

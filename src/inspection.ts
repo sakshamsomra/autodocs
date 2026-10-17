@@ -117,7 +117,7 @@ function genericInsight(file: SourceFile, text: SourceText): Partial<SourceInsig
     const prefix = code.slice(Math.max(0, literal.start - 160), literal.start);
     const after = code.slice(literal.end, literal.end + 50);
     if (/(?:\b(?:import|from|require(?:_relative)?|include(?:_once)?|require_once)|#\s*include)\s*\(?\s*$/.test(prefix) || /\bimport\s+[\w{}, *]+\s+from\s*$/.test(prefix) || /\bimport\s*\([^)]*$/.test(prefix) || extension === "go" && /\bimport\s+\w+\s*$/.test(prefix)) addImport(literal.value);
-    if (/\b(?:getenv|Getenv|env|GetEnvironmentVariable|getProperty)\s*\(\s*$/.test(prefix) && /^[A-Za-z_]\w*$/.test(literal.value)) configuration.add(`Environment: ${literal.value}`);
+    if (/\b(?:getenv|Getenv|env|env::var(?:_os)?|GetEnvironmentVariable|getProperty)\s*\(\s*$/.test(prefix) && /^[A-Za-z_]\w*$/.test(literal.value)) configuration.add(`Environment: ${literal.value}`);
     if (extension === "dart" && /\bimport\s*$/.test(prefix) && /^\s*;/.test(after)) addImport(literal.value);
   }
   for (const match of code.matchAll(/^\s*#\s*include\s*<([^>]+)>/gm)) addImport(match[1]);

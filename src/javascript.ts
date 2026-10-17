@@ -3,7 +3,7 @@ import { extname, basename } from "node:path";
 import type { SourceFile } from "./project.js";
 import type { SourceDependency, SourceInsight } from "./types.js";
 
-const providers: [RegExp, string][] = [[/^stripe$/, "Stripe"], [/^(?:@aws-sdk\/|aws-sdk$)/, "AWS"], [/^twilio$/, "Twilio"], [/^(?:nodemailer|@sendgrid\/mail)$/, "Email provider"], [/^openai$/, "OpenAI"], [/^@google\/(?:genai|generative-ai)$/, "Google Gemini"], [/^(?:firebase-admin|@google-cloud\/)/, "Google Cloud"], [/^@supabase\//, "Supabase"], [/^@sentry\//, "Sentry"], [/^@slack\/web-api$/, "Slack"]];
+const providers: [RegExp, string][] = [[/^stripe$/, "Stripe"], [/^(?:@aws-sdk\/|aws-sdk$)/, "AWS"], [/^twilio$/, "Twilio"], [/^(?:nodemailer|@sendgrid\/mail)$/, "Email provider"], [/^openai$/, "OpenAI"], [/^@anthropic-ai\/sdk$/, "Anthropic"], [/^@google\/(?:genai|generative-ai)$/, "Google Gemini"], [/^(?:firebase-admin|@google-cloud\/)/, "Google Cloud"], [/^@supabase\//, "Supabase"], [/^@sentry\//, "Sentry"], [/^@slack\/web-api$/, "Slack"], [/^cohere-ai$/, "Cohere"], [/^mistralai$/, "Mistral AI"], [/^@xai-org\/sdk$/, "xAI"]];
 export function inspectJavaScript(file: SourceFile): Partial<SourceInsight> {
   const ast = ts.createSourceFile(file.path, file.source, ts.ScriptTarget.Latest, true, /tsx?$/.test(file.path) ? ts.ScriptKind.TSX : ts.ScriptKind.JSX);
   const dependencies: SourceDependency[] = []; const declarations: string[] = []; const operations: string[] = [];
